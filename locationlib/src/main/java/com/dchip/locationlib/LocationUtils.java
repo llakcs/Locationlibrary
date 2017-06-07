@@ -38,11 +38,6 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
      */
     public void onCreate(Context context) {
         this.mContext = context;
-        SDKInitializer.initialize(context);
-        //自4.3.0起，百度地图SDK所有接口均支持百度坐标和国测局坐标，用此方法设置您使用的坐标类型.
-        //包括BD09LL和GCJ02两种坐标，默认是BD09LL坐标。
-        SDKInitializer.setCoordType(CoordType.BD09LL);
-        // 周边雷达设置用户，id为空默认是设备标识
         RadarSearchManager.getInstance().setUserID(userID);
         initlocation();
     }
