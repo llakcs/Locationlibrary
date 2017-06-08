@@ -9,6 +9,10 @@ import com.baidu.location.LocationClientOption;
 import com.baidu.mapapi.CoordType;
 import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.model.LatLng;
+import com.baidu.mapapi.radar.RadarNearbyResult;
+import com.baidu.mapapi.radar.RadarNearbySearchOption;
+import com.baidu.mapapi.radar.RadarSearchError;
+import com.baidu.mapapi.radar.RadarSearchListener;
 import com.baidu.mapapi.radar.RadarSearchManager;
 import com.baidu.mapapi.radar.RadarUploadInfo;
 import com.baidu.mapapi.radar.RadarUploadInfoCallback;
@@ -18,7 +22,7 @@ import com.dchip.locationlib.Mode.LMode;
  * Created by llakcs on 2017/6/6.
  */
 
-public class LocationUtils implements RadarUploadInfoCallback, BDLocationListener {
+public class LocationUtils implements RadarUploadInfoCallback, BDLocationListener,RadarSearchListener{
 
 
     // 定位相关
@@ -35,17 +39,63 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
         return utils;
     }
 
+    UploadstateListner mUpload;
+    ClearInfoStateListner mClearinfo;
+    NearbyInfoListListner mNearby;
+
+    public interface UploadstateListner{
+        void Getuploadstate(RadarSearchError error);
+    }
+
+    public interface ClearInfoStateListner{
+        void Getclearstate(RadarSearchError error);
+    }
+
+    public interface  NearbyInfoListListner{
+        void GetNearbyInfo(RadarNearbyResult result, RadarSearchError error);
+    }
+
+    /**
+     * 设置监听单次上传状态
+     * @param upload
+     */
+    public void SetUploadsateListner(UploadstateListner upload){
+
+        this.mUpload = upload;
+    }
+
+    /**
+     * 设置监听清除位置信息状态
+     * @param Clearinfo
+     */
+    public void SetClearInfoStateListner(ClearInfoStateListner Clearinfo){
+        this.mClearinfo = Clearinfo;
+    }
+
+    /**
+     * 设置监听周边雷达消息
+     * @param Nearby
+     */
+    public void SetNearbyInfoListListner(NearbyInfoListListner Nearby){
+        this.mNearby = Nearby;
+    }
+
+
+
+
     /**
      * 初始化
      * @param context
+     * @param enable  是否开启上传位置功能,
      * @param uploadType  true代表连续自动上传位置信息 ,false代表上传一次
-     * @return true 上传成功,false上传失败
+     * @return true上传成功,false上传失败
      */
-    public boolean onCreate(Context context, final boolean uploadType) {
+    public boolean onCreate(Context context,final boolean enable,final boolean uploadType) {
         this.mContext = context;
         lmode = new LMode();
         RadarSearchManager.getInstance().setUserID(userID);
         initlocation();
+        if(enable){
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -70,9 +120,9 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
                     uploadOnce();
                 }
                 islocation = true;
-
             }
         }).start();
+        }
         return islocation;
     }
 
@@ -137,6 +187,24 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
     }
 
     /**
+     *
+     * @return 返回当前latlng位置
+     */
+    public LatLng GetPostion(){
+        return positon;
+    }
+
+    /**
+     * 查找周边的人或设备
+     */
+    public void search(){
+        RadarNearbySearchOption option = new RadarNearbySearchOption()
+                .centerPt(positon).pageNum(0).radius(2000).pageCapacity(11);
+        RadarSearchManager.getInstance().nearbyInfoRequest(option);
+    }
+
+
+    /**
      * 停止上传位置信息
      */
     public void stopUpload(){
@@ -184,6 +252,27 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
     }
 
 
+    @Override
+    public void onGetNearbyInfoList(RadarNearbyResult radarNearbyResult, RadarSearchError radarSearchError) {
+        if(mNearby != null){
+            mNearby.GetNearbyInfo(radarNearbyResult,radarSearchError);
+        }
+    }
+
+    @Override
+    public void onGetUploadState(RadarSearchError radarSearchError) {
+        if(mUpload != null) {
+            mUpload.Getuploadstate(radarSearchError);
+        }
+    }
+
+    @Override
+    public void onGetClearInfoState(RadarSearchError radarSearchError) {
+
+        if(mClearinfo != null){
+            mClearinfo.Getclearstate(radarSearchError);
+        }
+    }
 
     /**
      * 退出时释放资源
@@ -202,6 +291,7 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
             return;
         }
         positon = new LatLng(bdLocation.getLatitude(), bdLocation.getLongitude());
+        islocation = true;
         lmode.setAddrStr(bdLocation.getAddrStr());
         lmode.setCitycode(bdLocation.getCityCode());
         lmode.setLocationDescribe(bdLocation.getLocationDescribe());
