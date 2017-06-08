@@ -8,8 +8,6 @@ import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
-import com.baidu.mapapi.CoordType;
-import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.radar.RadarNearbyResult;
 import com.baidu.mapapi.radar.RadarNearbySearchOption;
@@ -26,7 +24,6 @@ import com.dchip.locationlib.Mode.LMode;
 
 public class LocationUtils implements RadarUploadInfoCallback, BDLocationListener,RadarSearchListener{
 
-
     // 定位相关
     LocationClient mLocClient;
     private LatLng positon = null;
@@ -42,7 +39,10 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
     public static LocationUtils getIns() {
         return utils;
     }
-
+    //选项开关
+    private boolean locationEnable =false;
+    private boolean mUploadType = false;
+    //回调接口
     UploadstateListner mUpload;
     ClearInfoStateListner mClearinfo;
     NearbyInfoListListner mNearby;
@@ -105,47 +105,16 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
      * @param context
      * @param enable  是否开启上传位置功能,
      * @param uploadType  true代表连续自动上传位置信息 ,false代表上传一次
-     * @return true上传成功,false上传失败
+     *
      */
-    public boolean onCreate(Context context,final boolean enable,final boolean uploadType) {
+    public void onCreate(Context context,final boolean enable,final boolean uploadType) {
         this.mContext = context;
         lmode = new LMode();
         lhandler = new Handler();
         RadarSearchManager.getInstance().setUserID(userID);
         initlocation();
-        if(enable){
-            Log.e(tag,"enable ="+enable);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                int i=0;
-                while (positon == null){
-                    Log.e(tag,"postion == null");
-                    if(i ==3){
-                        islocation =false;
-                        Log.e(tag,"###location is timeout,please check BDLocationListener and postion");
-                        return;
-                    }
-                    try {
-                        Thread.sleep(1000);
-                    }catch (Exception e){
-                        e.printStackTrace();
-                    }
-                    i++;
-                }
-                if(uploadType){
-                    Log.e(tag,"####uploadtype = true");
-                    lhandler.sendEmptyMessage(AUTOUPLOAD);
-
-                }else{
-                    Log.e(tag,"###uploadtype = false");
-                    lhandler.sendEmptyMessage(UPLOAD);
-                }
-                islocation = true;
-            }
-        }).start();
-        }
-        return islocation;
+        this.locationEnable = enable;
+        this.mUploadType = uploadType;
     }
 
 
@@ -321,6 +290,13 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
         lmode.setLocationDescribe(bdLocation.getLocationDescribe());
         lmode.setTime(bdLocation.getTime());
         setuserComment(bdLocation.getAddrStr()+bdLocation.getLocationDescribe());
+        if(locationEnable){
+            if(mUploadType){
+                lhandler.sendEmptyMessage(AUTOUPLOAD);
+            }else{
+                lhandler.sendEmptyMessage(UPLOAD);
+            }
+        }
 
     }
 
