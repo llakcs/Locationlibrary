@@ -39,9 +39,6 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
     public static LocationUtils getIns() {
         return utils;
     }
-    //选项开关
-    private boolean locationEnable =false;
-    private boolean mUploadType = false;
     //回调接口
     UploadstateListner mUpload;
     ClearInfoStateListner mClearinfo;
@@ -89,9 +86,11 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
        public void handleMessage(Message msg) {
            switch(msg.what){
                case UPLOAD:
+                   Log.e(tag,"#########uploadType = once----------!");
                    uploadOnce();
                    break;
                case AUTOUPLOAD:
+                   Log.e(tag,"#########uploadType = auto----------!");
                    uploadLocation();
                    break;
            }
@@ -107,14 +106,42 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
      * @param uploadType  true代表连续自动上传位置信息 ,false代表上传一次
      *
      */
-    public void onCreate(Context context,final boolean enable,final boolean uploadType) {
+    public boolean onCreate(Context context,final boolean enable,final boolean uploadType) {
         this.mContext = context;
         lmode = new LMode();
         lhandler = new Handler();
         RadarSearchManager.getInstance().setUserID(userID);
         initlocation();
-        this.locationEnable = enable;
-        this.mUploadType = uploadType;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                int i=0;
+                while(!islocation){
+                    Log.e(tag,"########等待百度地图postion--------!");
+                    if(i ==3){
+                        Log.e(tag,"########超时--------!");
+                        islocation = false;
+                        return;
+                    }
+                    try {
+                        Thread.sleep(1000);
+                    }catch (Exception e){
+
+                    }
+                    i++;
+                }
+                if(enable){
+                    if(uploadType){
+                        Log.e(tag,"#########uploadType = true----------!");
+                        lhandler.sendEmptyMessage(AUTOUPLOAD);
+                    }else{
+                        Log.e(tag,"#########uploadType = false----------!");
+                        lhandler.sendEmptyMessage(UPLOAD);
+                    }
+                }
+            }
+        }).start();
+       return islocation;
     }
 
 
@@ -282,7 +309,6 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
         if (bdLocation == null) {
             return;
         }
-        Log.e(tag,"###onReceiveLocation");
         positon = new LatLng(bdLocation.getLatitude(), bdLocation.getLongitude());
         islocation = true;
         lmode.setAddrStr(bdLocation.getAddrStr());
@@ -290,13 +316,7 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
         lmode.setLocationDescribe(bdLocation.getLocationDescribe());
         lmode.setTime(bdLocation.getTime());
         setuserComment(bdLocation.getAddrStr()+bdLocation.getLocationDescribe());
-        if(locationEnable){
-            if(mUploadType){
-                lhandler.sendEmptyMessage(AUTOUPLOAD);
-            }else{
-                lhandler.sendEmptyMessage(UPLOAD);
-            }
-        }
+
 
     }
 
