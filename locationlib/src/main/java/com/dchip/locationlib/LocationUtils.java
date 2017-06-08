@@ -1,6 +1,8 @@
 package com.dchip.locationlib;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
@@ -35,6 +37,8 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
     private boolean islocation=false;
     public static final LocationUtils utils = new LocationUtils();
     private LMode lmode;
+    private static final int AUTOUPLOAD = 0x05;
+    private static final int UPLOAD = 0x03;
     public static LocationUtils getIns() {
         return utils;
     }
@@ -80,7 +84,20 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
         this.mNearby = Nearby;
     }
 
-
+   Handler lhandler = new Handler(){
+       @Override
+       public void handleMessage(Message msg) {
+           switch(msg.what){
+               case UPLOAD:
+                   uploadOnce();
+                   break;
+               case AUTOUPLOAD:
+                   uploadLocation();
+                   break;
+           }
+           super.handleMessage(msg);
+       }
+   };
 
 
     /**
@@ -93,6 +110,7 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
     public boolean onCreate(Context context,final boolean enable,final boolean uploadType) {
         this.mContext = context;
         lmode = new LMode();
+        lhandler = new Handler();
         RadarSearchManager.getInstance().setUserID(userID);
         initlocation();
         if(enable){
@@ -115,9 +133,10 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
                     i++;
                 }
                 if(uploadType){
-                    uploadLocation();
+                    lhandler.sendEmptyMessage(AUTOUPLOAD);
+
                 }else{
-                    uploadOnce();
+                    lhandler.sendEmptyMessage(UPLOAD);
                 }
                 islocation = true;
             }
@@ -125,6 +144,7 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
         }
         return islocation;
     }
+
 
     private void initlocation() {
         // 定位初始化
