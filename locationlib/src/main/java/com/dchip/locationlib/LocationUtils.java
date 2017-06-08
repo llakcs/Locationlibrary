@@ -114,12 +114,13 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
         RadarSearchManager.getInstance().setUserID(userID);
         initlocation();
         if(enable){
+            Log.e(tag,"enable ="+enable);
         new Thread(new Runnable() {
             @Override
             public void run() {
                 int i=0;
                 while (positon == null){
-
+                    Log.e(tag,"postion == null");
                     if(i ==3){
                         islocation =false;
                         Log.e(tag,"###location is timeout,please check BDLocationListener and postion");
@@ -133,9 +134,11 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
                     i++;
                 }
                 if(uploadType){
+                    Log.e(tag,"####uploadtype = true");
                     lhandler.sendEmptyMessage(AUTOUPLOAD);
 
                 }else{
+                    Log.e(tag,"###uploadtype = false");
                     lhandler.sendEmptyMessage(UPLOAD);
                 }
                 islocation = true;
@@ -310,6 +313,7 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
         if (bdLocation == null) {
             return;
         }
+        Log.e(tag,"###onReceiveLocation");
         positon = new LatLng(bdLocation.getLatitude(), bdLocation.getLongitude());
         islocation = true;
         lmode.setAddrStr(bdLocation.getAddrStr());
