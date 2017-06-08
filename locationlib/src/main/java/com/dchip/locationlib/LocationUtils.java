@@ -12,6 +12,7 @@ import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.radar.RadarSearchManager;
 import com.baidu.mapapi.radar.RadarUploadInfo;
 import com.baidu.mapapi.radar.RadarUploadInfoCallback;
+import com.dchip.locationlib.Mode.LMode;
 
 /**
  * Created by llakcs on 2017/6/6.
@@ -25,9 +26,11 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
     private LatLng positon = null;
     private String userComment = "";
     private String userID = "";
+    private String tag="LocationUtils";
     private Context mContext;
+    private boolean islocation=false;
     public static final LocationUtils utils = new LocationUtils();
-
+    private LMode lmode;
     public static LocationUtils getIns() {
         return utils;
     }
@@ -35,11 +38,42 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
     /**
      * 初始化
      * @param context
+     * @param uploadType  true代表连续自动上传位置信息 ,false代表上传一次
+     * @return true 上传成功,false上传失败
      */
-    public void onCreate(Context context) {
+    public boolean onCreate(Context context, final boolean uploadType) {
         this.mContext = context;
+        lmode = new LMode();
         RadarSearchManager.getInstance().setUserID(userID);
         initlocation();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                int i=0;
+                while (positon == null){
+
+                    if(i ==3){
+                        islocation =false;
+                        Log.e(tag,"###location is timeout,please check BDLocationListener and postion");
+                        return;
+                    }
+                    try {
+                        Thread.sleep(1000);
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+                    i++;
+                }
+                if(uploadType){
+                    uploadLocation();
+                }else{
+                    uploadOnce();
+                }
+                islocation = true;
+
+            }
+        }).start();
+        return islocation;
     }
 
     private void initlocation() {
@@ -53,6 +87,9 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
         mLocClient.setLocOption(option);
         mLocClient.start();
     }
+
+
+
 
     /**
      * 设置用户标识码
@@ -71,16 +108,32 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
         this.userComment = userComment;
     }
 
+
+    /**
+     * 上传一次位置
+     *
+     * @param
+     */
+    private void uploadOnce(){
+        if (positon == null) {
+            return;
+        }
+        RadarUploadInfo info = new RadarUploadInfo();
+        info.comments = userComment;
+        info.pt = positon;
+        RadarSearchManager.getInstance().uploadInfoRequest(info);
+    }
+
+
     /**
      * 自动连续上传位置
      * @return  返回true 成功上传位置信息 返回false失败
      */
-    public boolean uploadLocation(){
+    private void uploadLocation(){
         if(positon == null){
-          return false;
+          return;
         }
         RadarSearchManager.getInstance().startUploadAuto(utils, 5000);
-        return true;
     }
 
     /**
@@ -96,6 +149,40 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
     public void cleaninfo(){
         RadarSearchManager.getInstance().clearUserInfo();
     }
+
+    /**
+     *
+     * @return  返回地址信息
+     */
+    public String GetAddrstr(){
+      return lmode.getAddrStr();
+    }
+
+    /**
+     *
+     * @return 返回最近定位时间
+     */
+    public String GetTime(){
+        return lmode.getTime();
+    }
+
+    /**
+     *
+     * @return 返回城市代码
+     */
+    public String GetCitycode(){
+        return lmode.getCitycode();
+    }
+
+
+    /**
+     *
+     * @return 返回位置语义
+     */
+    public String GetLocationDescribe(){
+        return lmode.getLocationDescribe();
+    }
+
 
 
     /**
@@ -115,6 +202,12 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
             return;
         }
         positon = new LatLng(bdLocation.getLatitude(), bdLocation.getLongitude());
+        lmode.setAddrStr(bdLocation.getAddrStr());
+        lmode.setCitycode(bdLocation.getCityCode());
+        lmode.setLocationDescribe(bdLocation.getLocationDescribe());
+        lmode.setTime(bdLocation.getTime());
+        setuserComment(bdLocation.getAddrStr()+bdLocation.getLocationDescribe());
+
     }
 
     @Override
