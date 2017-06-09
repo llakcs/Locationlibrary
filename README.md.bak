@@ -50,8 +50,6 @@ GetCitycode();        //返回当前的城市代码
 
 GetLocationDescribe() //返回位置语义
 
-search（）            //查找周边相同的设备或用户
-
 
 
 
