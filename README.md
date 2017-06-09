@@ -13,10 +13,13 @@ how to use
                              android:value="OSyXv072EE6zfx43D3NKT9YbgiAaTQf0" />       //key:开发者申请的baidumapKey
                              
 
-2. LocationUtils操作类在activity里初始化     LocationUtils.getIns().onCreate(Instance,MainActivity.this,true,true);//Activity activity,Context context, boolean enable, boolean uploadType
-                                             LocationUtils.getIns().setUserID("FFFFF"); //用户标识 
+2. LocationUtils操作类在activity里初始化   
+ 
+   LocationUtils.getIns().onCreate(Instance,MainActivity.this,true,true);//Activity activity,Context context, boolean enable, boolean uploadType
+
+   LocationUtils.getIns().setUserID("FFFFF"); //用户标识 
                                              
-3. 在activity关闭的时候释放资源              LocationUtils.getIns().onDestroy();//释放资源
+3. 在activity关闭的时候释放资源      LocationUtils.getIns().onDestroy();//释放资源
       
 具体使用请参考工程里的demo
                              
