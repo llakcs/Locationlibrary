@@ -25,9 +25,6 @@ public class MainActivity extends AppCompatActivity{
     private BaiduMap mBaiduMap;
     private Button search_btn;
     BitmapDescriptor ff3 = BitmapDescriptorFactory.fromResource(R.drawable.icon_markc);
-
-
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,9 +33,7 @@ public class MainActivity extends AppCompatActivity{
         initUi();
         LocationUtils.getIns().onCreate(Instance,MainActivity.this,true,true);
         LocationUtils.getIns().setUserID("FFFFF");
-
     }
-
     private void initUi() {
         mMapView = (MapView) findViewById(R.id.map);
         mBaiduMap = mMapView.getMap();
@@ -56,8 +51,6 @@ public class MainActivity extends AppCompatActivity{
             @Override
             public void onClick(View v) {
                 LocationUtils.getIns().search();
-
-
             }
         });
         //监听周边雷达状态
@@ -73,8 +66,6 @@ public class MainActivity extends AppCompatActivity{
         });
 
     }
-
-
 
     @Override
     protected void onDestroy() {
