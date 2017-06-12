@@ -38,7 +38,6 @@ SetClearInfoStateListner  //监听清除位置信息状态
 
 SetNearbyInfoListListner  //监听周边雷达信息状态
 
-SetLocationRecverListner //监听定位信息
 
 
 方法
