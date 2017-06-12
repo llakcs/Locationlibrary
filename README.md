@@ -6,7 +6,7 @@ how to use
 
 使用前准备：去百度地图开发者中心申请key 和设置好周边雷达    
 
-注意事项:   1.申请key的过程中需要填写package,这个package是APP的package。 2.demo里面自己上传坐标,自己在周边雷达里是查看不了。会显示查询失败！这时候需要另外一台手机来上传坐标信息才可以查看!
+注意事项:   1.申请key的过程中需要填写package,这个package是APP的package。 2.demo里面自己上传坐标,自己在周边雷达里是查看不了。会显示查询失败！这时候需要另外一台手机来上传坐标信息才可以查看! 
 
 1.首先在locationlib-manifests.xml 设置百度地图申请的key   <meta-data
                              android:name="com.baidu.lbsapi.API_KEY"
@@ -17,9 +17,10 @@ how to use
  
    LocationUtils.getIns().onCreate(Instance,MainActivity.this,true,true);//Activity activity,Context context, boolean enable, boolean uploadType
 
+   
    LocationUtils.getIns().setUserID("FFFFF"); //用户标识  
    
-   定位加上地图：LocationUtils.getIns().enaleMap(mBaiduMap);
+   定位加上地图功能开启传入baidumap：LocationUtils.getIns().enaleMap(mBaiduMap);
      
    设置地图图片标识：LocationUtils.getIns().setLocationdrawable(ff3);
    
@@ -66,4 +67,4 @@ enaleMap(Baidumap map)  //开启周边雷达功能
 setLocationdrawable(BitmapDescriptor ff3)  设置显示在地图上的图标图片
 
 
-
+ok!最后大家有什么问题可以联系我QQ1085377046欢迎交流!
