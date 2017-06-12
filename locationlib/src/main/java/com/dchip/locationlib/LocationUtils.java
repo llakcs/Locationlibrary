@@ -2,14 +2,25 @@ package com.dchip.locationlib;
 
 import android.app.Activity;
 import android.content.Context;
-import android.os.Handler;
-import android.os.Message;
+import android.os.Bundle;
 import android.util.Log;
+import android.widget.TextView;
 
 import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
+import com.baidu.mapapi.map.BaiduMap;
+import com.baidu.mapapi.map.BitmapDescriptor;
+import com.baidu.mapapi.map.BitmapDescriptorFactory;
+import com.baidu.mapapi.map.InfoWindow;
+import com.baidu.mapapi.map.MapPoi;
+import com.baidu.mapapi.map.MapStatus;
+import com.baidu.mapapi.map.MapStatusUpdate;
+import com.baidu.mapapi.map.MapStatusUpdateFactory;
+import com.baidu.mapapi.map.Marker;
+import com.baidu.mapapi.map.MarkerOptions;
+import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.radar.RadarNearbyResult;
 import com.baidu.mapapi.radar.RadarNearbySearchOption;
@@ -26,7 +37,7 @@ import com.dchip.locationlib.Service.LocationService;
  * Created by llakcs on 2017/6/6.
  */
 
-public class LocationUtils implements RadarUploadInfoCallback, BDLocationListener, RadarSearchListener {
+public class LocationUtils implements RadarUploadInfoCallback, BDLocationListener, RadarSearchListener,BaiduMap.OnMarkerClickListener,BaiduMap.OnMapClickListener{
 
     // 定位相关
     LocationClient mLocClient;
@@ -42,10 +53,15 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
     private boolean mUploadType;
     private LocationService locationService;
     private Activity mActivity;
+    //地图相关
+    private MyLocationData locData;
+    private BaiduMap mBaiduMap = null;
     public static LocationUtils getIns() {
         return utils;
     }
-
+    boolean isFirstLoc = true; // 是否首次定位
+    private TextView popupText = null; // 泡泡view
+    BitmapDescriptor ff3 = BitmapDescriptorFactory.fromResource(R.drawable.icon_marka);
     //回调接口
     UploadstateListner mUpload;
     ClearInfoStateListner mClearinfo;
@@ -60,9 +76,8 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
     }
 
     public interface NearbyInfoListListner {
-        void GetNearbyInfo(RadarNearbyResult result, RadarSearchError error);
+        void GetNearbyInfo(boolean statue);
     }
-
     /**
      * 设置监听单次上传状态
      *
@@ -94,17 +109,21 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
 
     /**
      * 初始化
-     *
-     * @param context
+     * @param activity    传入当前的activity
+     * @param context     context
      * @param enable     是否开启上传位置功能,
      * @param uploadType true代表连续自动上传位置信息 ,false代表上传一次
+     *
      */
-    public void onCreate(Activity activity,Context context, boolean enable, boolean uploadType) {
+    public void onCreate(Activity activity,Context context,boolean enable, boolean uploadType) {
         lmode = new LMode();
         this.mContext = context;
         this.mActivity = activity;
         this.mEnable = enable;
         this.mUploadType = uploadType;
+
+        // 周边雷达设置监听
+        RadarSearchManager.getInstance().addNearbyInfoListener(this);
         //定位服务初始化
         lServiceinit();
         RadarSearchManager.getInstance().setUserID(userID);
@@ -114,8 +133,6 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
         }
         initlocation();
     }
-
-
     private void lServiceinit(){
         // -----------location config ------------
         locationService = ((locationApplication)mContext.getApplicationContext()).locationService;
@@ -141,6 +158,28 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
         option.setScanSpan(1000);
         mLocClient.setLocOption(option);
         mLocClient.start();
+    }
+
+
+    /**
+     *
+     * @param map 默认为null不开启地图功能
+     */
+    public void enaleMap(BaiduMap map){
+        this.mBaiduMap = map;
+        if(mBaiduMap != null){
+            mBaiduMap.setMyLocationEnabled(true);
+            mBaiduMap.setOnMarkerClickListener(this);
+            mBaiduMap.setOnMapClickListener(this);
+        }
+    }
+
+    /**
+     * 设置地图上设备或人标识图片
+     * @param ff3
+     */
+    public void setLocationdrawable(BitmapDescriptor ff3){
+        this.ff3 = ff3;
     }
 
 
@@ -197,20 +236,18 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
     }
 
     /**
-     * @return 返回当前latlng位置
-     */
-    public LatLng GetPostion() {
-        return positon;
-    }
-
-    /**
      * 查找周边的人或设备
      */
     public void search() {
         RadarNearbySearchOption option = new RadarNearbySearchOption()
                 .centerPt(positon).pageNum(0).radius(2000).pageCapacity(11);
         RadarSearchManager.getInstance().nearbyInfoRequest(option);
+        if(mBaiduMap != null) {
+            mBaiduMap.hideInfoWindow();
+        }
     }
+
+
 
 
     /**
@@ -256,12 +293,98 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
         return lmode.getLocationDescribe();
     }
 
+    /**
+     * 退出时释放资源
+     */
+    public void onDestroy() {
+        // 退出时销毁定位
+        if(mLocClient != null && locationService != null) {
+            mLocClient.stop();
+            locationService.unregisterListener(this); //注销掉监听
+            locationService.stop(); //停止定位服务
+        }
+        ff3.recycle();
+        mBaiduMap = null;
+        // 释放周边雷达相关
+        RadarSearchManager.getInstance().removeNearbyInfoListener(this);
+        RadarSearchManager.getInstance().clearUserInfo();
+        RadarSearchManager.getInstance().destroy();
+        autoupload = false;
+    }
+
+
+    /**
+     * 更新结果地图
+     *
+     * @param res
+     */
+    private void parseResultToMap(RadarNearbyResult res,BitmapDescriptor ff3) {
+        if(mBaiduMap != null) {
+            mBaiduMap.clear();
+            if (res != null && res.infoList != null && res.infoList.size() > 0) {
+                for (int i = 0; i < res.infoList.size(); i++) {
+                    MarkerOptions option = new MarkerOptions().icon(ff3).position(res.infoList.get(i).pt);
+                    Bundle des = new Bundle();
+                    if (res.infoList.get(i).comments == null || res.infoList.get(i).comments.equals("")) {
+                        des.putString("des", "没有备注");
+                    } else {
+                        des.putString("des", res.infoList.get(i).comments);
+                    }
+
+                    option.extraInfo(des);
+                    mBaiduMap.addOverlay(option);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onMapClick(LatLng latLng) {
+        if(mBaiduMap != null) {
+            mBaiduMap.hideInfoWindow();
+        }
+    }
+
+    @Override
+    public boolean onMapPoiClick(MapPoi mapPoi) {
+        return false;
+    }
+
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        if(mBaiduMap != null) {
+            mBaiduMap.hideInfoWindow();
+        }
+        if (marker != null) {
+            popupText = new TextView(mContext);
+            popupText.setBackgroundResource(R.drawable.popup);
+            popupText.setTextColor(0xFF000000);
+            popupText.setText(marker.getExtraInfo().getString("des"));
+            mBaiduMap.showInfoWindow(new InfoWindow(popupText, marker.getPosition(), -47));
+            MapStatusUpdate update = MapStatusUpdateFactory.newLatLng(marker.getPosition());
+            mBaiduMap.setMapStatus(update);
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     @Override
     public void onGetNearbyInfoList(RadarNearbyResult radarNearbyResult, RadarSearchError radarSearchError) {
-        if (mNearby != null) {
-            mNearby.GetNearbyInfo(radarNearbyResult, radarSearchError);
+
+        if (radarSearchError == RadarSearchError.RADAR_NO_ERROR) {
+            parseResultToMap(radarNearbyResult,ff3);
+            if (mNearby != null) {
+                mNearby.GetNearbyInfo(true);
+            }
+
+        } else {
+            // 获取失败
+            if (mNearby != null) {
+                mNearby.GetNearbyInfo(false);
+            }
         }
+
     }
 
     @Override
@@ -279,22 +402,6 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
         }
     }
 
-    /**
-     * 退出时释放资源
-     */
-    public void onDestroy() {
-        // 退出时销毁定位
-        if(mLocClient != null && locationService != null) {
-            mLocClient.stop();
-            locationService.unregisterListener(this); //注销掉监听
-            locationService.stop(); //停止定位服务
-        }
-        // 释放周边雷达相关
-        RadarSearchManager.getInstance().clearUserInfo();
-        RadarSearchManager.getInstance().destroy();
-        autoupload = false;
-    }
-
     @Override
     public void onReceiveLocation(BDLocation bdLocation) {
         if (bdLocation == null) {
@@ -306,7 +413,21 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
         lmode.setLocationDescribe(bdLocation.getLocationDescribe());
         lmode.setTime(bdLocation.getTime());
         setuserComment(bdLocation.getAddrStr());
-       // Log.e(tag, "usercomment ="+bdLocation.getAddrStr() + bdLocation.getLocationDescribe());
+        //位置信息
+        locData = new MyLocationData.Builder()
+                .accuracy(bdLocation.getRadius())
+                // 此处设置开发者获取到的方向信息，顺时针0-360
+                .direction(100).latitude(bdLocation.getLatitude())
+                .longitude(bdLocation.getLongitude()).build();
+        if (mBaiduMap != null) {
+            mBaiduMap.setMyLocationData(locData);
+            if (isFirstLoc) {
+                isFirstLoc = false;
+                MapStatus.Builder builder = new MapStatus.Builder();
+                builder.target(positon).zoom(18.0f);
+                mBaiduMap.animateMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build()));
+            }
+        }
         if(mEnable) {
             if (!autoupload) {
                 if(mUploadType) {
