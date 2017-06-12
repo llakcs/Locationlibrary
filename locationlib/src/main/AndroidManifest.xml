@@ -8,7 +8,7 @@
         android:supportsRtl="true">
         <meta-data
             android:name="com.baidu.lbsapi.API_KEY"
-            android:value="OSyXv072EE6zfx43D3NKT9YbgiAaTQf0" />       //key:开发者申请的Key
+            android:value="Fh6fEtaT7Xlqzfi0WS8VI5G9qZ9xK8AG" />       //key:开发者申请的Key
 
         <service
             android:name="com.baidu.location.f"

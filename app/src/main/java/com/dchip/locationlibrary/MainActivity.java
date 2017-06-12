@@ -31,12 +31,14 @@ public class MainActivity extends AppCompatActivity{
         Instance = this;
         setContentView(R.layout.activity_main);
         initUi();
+        //初始化定位功能
         LocationUtils.getIns().onCreate(Instance,MainActivity.this,true,true);
         LocationUtils.getIns().setUserID("FFFFF");
     }
     private void initUi() {
         mMapView = (MapView) findViewById(R.id.map);
         mBaiduMap = mMapView.getMap();
+        //开启周边雷达功能
         LocationUtils.getIns().enaleMap(mBaiduMap);
         LocationUtils.getIns().setLocationdrawable(ff3);
         clean_btn = (Button) findViewById(R.id.clean_btn);
