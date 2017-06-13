@@ -304,12 +304,18 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
             locationService.stop(); //停止定位服务
         }
         ff3.recycle();
-        mBaiduMap = null;
+        if(mBaiduMap != null) {
+            mBaiduMap.removeMarkerClickListener(this);
+            mBaiduMap = null;
+        }
         // 释放周边雷达相关
         RadarSearchManager.getInstance().removeNearbyInfoListener(this);
         RadarSearchManager.getInstance().clearUserInfo();
         RadarSearchManager.getInstance().destroy();
         autoupload = false;
+        mUpload = null;
+        mClearinfo = null;
+        mNearby = null;
     }
 
 
