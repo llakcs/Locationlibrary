@@ -12,10 +12,21 @@ how to use
                              android:name="com.baidu.lbsapi.API_KEY"
                              android:value="OSyXv072EE6zfx43D3NKT9YbgiAaTQf0" />       //key:开发者申请的baidumapKey
                              
+2.在app的application里面加入下面代码
 
-2. LocationUtils操作类在activity里初始化如果只是使用定位功能，代码如下
- 
-   LocationUtils.getIns().onCreate(Instance,MainActivity.this,true,true);//Activity activity,Context context, boolean enable, boolean uploadType
+        locationService = new LocationService(getApplicationContext());
+        mVibrator =(Vibrator)getApplicationContext().getSystemService(Service.VIBRATOR_SERVICE);
+        SDKInitializer.initialize(getApplicationContext());
+        //自4.3.0起，百度地图SDK所有接口均支持百度坐标和国测局坐标，用此方法设置您使用的坐标类型.
+        //包括BD09LL和GCJ02两种坐标，默认是BD09LL坐标。
+        SDKInitializer.setCoordType(CoordType.BD09LL);
+
+
+3. LocationUtils操作类在activity里初始化如果只是使用定位功能，代码如下
+
+   locationService = ((MyApplication)getApplicationContext()).locationService;
+   
+   LocationUtils.getIns().onCreate(Instance,MainActivity.thislocationService,true,true);//Activity activity,Context context,locationService locationService boolean enable, boolean uploadType
 
    
    LocationUtils.getIns().setUserID("FFFFF"); //用户标识  
@@ -26,7 +37,7 @@ how to use
    
    设置监听器返回周边雷达查询状态: LocationUtils.getIns().SetNearbyInfoListListner
                                              
-3. 在activity关闭的时候释放资源      LocationUtils.getIns().onDestroy();//释放资源
+4. 在activity关闭的时候释放资源      LocationUtils.getIns().onDestroy();//释放资源
       
 具体使用请参考工程里的demo
                              
