@@ -1,4 +1,4 @@
-package com.dchip.locationlib.Application;
+package com.dchip.locationlibrary;
 
 import android.app.Application;
 import android.app.Service;
@@ -9,12 +9,14 @@ import com.baidu.mapapi.SDKInitializer;
 import com.dchip.locationlib.Service.LocationService;
 
 /**
- * Created by llakcs on 2017/6/7.
+ * Created by llakcs on 2017/6/14.
  */
 
-public class locationApplication extends Application {
+public class MyApplication extends Application {
     public LocationService locationService;
     public Vibrator mVibrator;
+
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -24,6 +26,5 @@ public class locationApplication extends Application {
         //自4.3.0起，百度地图SDK所有接口均支持百度坐标和国测局坐标，用此方法设置您使用的坐标类型.
         //包括BD09LL和GCJ02两种坐标，默认是BD09LL坐标。
         SDKInitializer.setCoordType(CoordType.BD09LL);
-        // 周边雷达设置用户，id为空默认是设备标识
     }
 }

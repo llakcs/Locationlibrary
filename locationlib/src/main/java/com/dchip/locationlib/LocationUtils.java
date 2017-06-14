@@ -1,8 +1,11 @@
 package com.dchip.locationlib;
 
 import android.app.Activity;
+import android.app.Application;
+import android.app.Service;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.util.Log;
 import android.widget.TextView;
 
@@ -10,6 +13,8 @@ import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
+import com.baidu.mapapi.CoordType;
+import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
@@ -29,7 +34,6 @@ import com.baidu.mapapi.radar.RadarSearchListener;
 import com.baidu.mapapi.radar.RadarSearchManager;
 import com.baidu.mapapi.radar.RadarUploadInfo;
 import com.baidu.mapapi.radar.RadarUploadInfoCallback;
-import com.dchip.locationlib.Application.locationApplication;
 import com.dchip.locationlib.Mode.LMode;
 import com.dchip.locationlib.Service.LocationService;
 
@@ -51,7 +55,7 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
     private LMode lmode;
     private boolean mEnable;
     private boolean mUploadType;
-    private LocationService locationService;
+    private LocationService mlocationService;
     private Activity mActivity;
     //地图相关
     private MyLocationData locData;
@@ -61,6 +65,8 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
     }
     boolean isFirstLoc = true; // 是否首次定位
     private TextView popupText = null; // 泡泡view
+    private Application application;
+
     BitmapDescriptor ff3 = BitmapDescriptorFactory.fromResource(R.drawable.icon_marka);
     //回调接口
     UploadstateListner mUpload;
@@ -115,35 +121,34 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
      * @param uploadType true代表连续自动上传位置信息 ,false代表上传一次
      *
      */
-    public void onCreate(Activity activity,Context context,boolean enable, boolean uploadType) {
+    public void onCreate(Activity activity,Context context,LocationService locationService, boolean enable, boolean uploadType) {
         lmode = new LMode();
         this.mContext = context;
         this.mActivity = activity;
         this.mEnable = enable;
         this.mUploadType = uploadType;
-
+        this.mlocationService = locationService;
         // 周边雷达设置监听
         RadarSearchManager.getInstance().addNearbyInfoListener(this);
         //定位服务初始化
         lServiceinit();
         RadarSearchManager.getInstance().setUserID(userID);
-        if(locationService != null) {
-            locationService.start();// 定位SDK
+        if(mlocationService != null) {
+            mlocationService.start();// 定位SDK
             // start之后会默认发起一次定位请求，开发者无须判断isstart并主动调用request
         }
         initlocation();
     }
     private void lServiceinit(){
         // -----------location config ------------
-        locationService = ((locationApplication)mContext.getApplicationContext()).locationService;
         //获取locationservice实例，建议应用中只初始化1个location实例，然后使用，可以参考其他示例的activity，都是通过此种方式获取locationservice实例的
-        locationService.registerListener(this);
+        mlocationService.registerListener(this);
         //注册监听
         int type =mActivity.getIntent().getIntExtra("from", 0);
         if (type == 0) {
-            locationService.setLocationOption(locationService.getDefaultLocationClientOption());
+            mlocationService.setLocationOption(mlocationService.getDefaultLocationClientOption());
         } else if (type == 1) {
-            locationService.setLocationOption(locationService.getOption());
+            mlocationService.setLocationOption(mlocationService.getOption());
         }
     }
 
@@ -298,10 +303,10 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
      */
     public void onDestroy() {
         // 退出时销毁定位
-        if(mLocClient != null && locationService != null) {
+        if(mLocClient != null && mlocationService != null) {
             mLocClient.stop();
-            locationService.unregisterListener(this); //注销掉监听
-            locationService.stop(); //停止定位服务
+            mlocationService.unregisterListener(this); //注销掉监听
+            mlocationService.stop(); //停止定位服务
         }
         ff3.recycle();
         if(mBaiduMap != null) {

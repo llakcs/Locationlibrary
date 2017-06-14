@@ -11,6 +11,7 @@ import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
 import com.baidu.mapapi.map.MapView;
 import com.dchip.locationlib.LocationUtils;
+import com.dchip.locationlib.Service.LocationService;
 
 /**
  * Created by llakcs on 2017/6/8.
@@ -19,7 +20,7 @@ import com.dchip.locationlib.LocationUtils;
 public class MainActivity extends AppCompatActivity{
     private Button clean_btn;
     private MainActivity Instance;
-
+    private LocationService locationService;
     // 地图相关
     private MapView mMapView;
     private BaiduMap mBaiduMap;
@@ -31,8 +32,9 @@ public class MainActivity extends AppCompatActivity{
         Instance = this;
         setContentView(R.layout.activity_main);
         initUi();
+        locationService = ((MyApplication)getApplicationContext()).locationService;
         //初始化定位功能
-        LocationUtils.getIns().onCreate(Instance,MainActivity.this,true,true);
+        LocationUtils.getIns().onCreate(Instance,MainActivity.this,locationService,true,true);
         LocationUtils.getIns().setUserID("FFFFF");
     }
     private void initUi() {
@@ -73,7 +75,7 @@ public class MainActivity extends AppCompatActivity{
     protected void onDestroy() {
         LocationUtils.getIns().onDestroy();
         // 释放地图
-        ff3.recycle();
+       // ff3.recycle();
         mMapView.onDestroy();
         mBaiduMap = null;
         super.onDestroy();
