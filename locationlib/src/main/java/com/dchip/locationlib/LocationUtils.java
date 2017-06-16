@@ -213,7 +213,7 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
      *
      * @param
      */
-    private void uploadOnce() {
+    public void uploadOnce() {
         if (positon == null) {
             return;
         }
@@ -230,7 +230,7 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
      *
      * @return 返回true 成功上传位置信息 返回false失败
      */
-    private  void uploadLocation() {
+    public   void uploadLocation() {
         if (positon == null) {
             return;
         }
@@ -418,12 +418,11 @@ public class LocationUtils implements RadarUploadInfoCallback, BDLocationListene
         if (bdLocation == null) {
             return;
         }
+
         positon = new LatLng(bdLocation.getLatitude(), bdLocation.getLongitude());
         lmode.setAddrStr(bdLocation.getAddrStr());
         lmode.setCitycode(bdLocation.getCityCode());
-        lmode.setLocationDescribe(bdLocation.getLocationDescribe());
-        lmode.setTime(bdLocation.getTime());
-        setuserComment(bdLocation.getAddrStr());
+        lmode.setLocationDescribe(bdLocation.getLocationDescribe());;
         //位置信息
         locData = new MyLocationData.Builder()
                 .accuracy(bdLocation.getRadius())
